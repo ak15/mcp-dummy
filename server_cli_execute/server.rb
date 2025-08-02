@@ -65,7 +65,6 @@ STDIN.each_line do |line|
       })
 
     when 'call', 'tools/call'
-      puts "-----#{req.inspect}---------"
       args = req.dig(:params, :arguments)
       cmd = (args[:cmd] || args['cmd']).to_s.strip
       cwd = (args[:cwd] || args['cwd']).to_s
