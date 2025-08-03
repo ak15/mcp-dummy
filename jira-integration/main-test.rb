@@ -1,25 +1,22 @@
 #!/usr/bin/env ruby
-# server-test.rb – Client to test ruby-shell server
+# jira-test.rb – Client to test jira-integration server
 
 require 'json'
 require 'open3'
 
 # Config
-HELPER_SCRIPT = '/home/akanswal/co/mcp/server_cli_execute/server.rb'
-CMD = 'debe rspec spec/lib/wired/live_tools/power_stats/catalyst_spec.rb'
+HELPER_SCRIPT = '/home/akanswal/co/mcp/jira-integration/main.rb'
+ISSUE_KEY = 'TEST-123' # Replace with a real issue key for your Jira
 
-# Start the server
-puts "🚀 Launching ruby-shell helper..."
+puts "🚀 Launching jira-integration helper..."
 helper = IO.popen(['ruby', HELPER_SCRIPT], 'r+', err: [:child, :out])
 sleep 0.2
 
-# Ensure cleanup
 at_exit do
   helper.close unless helper.closed?
   Process.wait(helper.pid) rescue nil
 end
 
-# JSON-RPC helpers
 def send_json(io, obj)
   io.puts(JSON.dump(obj))
   io.flush
@@ -49,30 +46,26 @@ loop do
   break if data[:id] == 1
 end
 
-# 2. Call the shell_exec tool
+# 2. Call the jira_connect tool
 send_json(helper, {
   id: 3,
   jsonrpc: '2.0',
   method: 'tools/call',
   params: {
-    name: 'local-shell/shell_exec',
-    arguments: { cmd: CMD }
+    name: 'jira_connect',
+    arguments: { issue_key: ISSUE_KEY }
   }
 })
 
-# 3. Stream output
-puts "\n📤 Live Output:"
+# 3. Stream output (if any)
+puts "\n📤 JIRA Output:"
 puts "────────────────────────────────────────────"
 
 final_result = nil
 until final_result
   data = read_json(helper)
 
-  if data[:method] == 'tool/output'
-    chunk = data[:params][:chunk]
-    print chunk
-    $stdout.flush
-  elsif data[:id] == 3 && data[:result]
+  if data[:id] == 3 && data[:result]
     final_result = data[:result]
   end
 end
@@ -82,5 +75,4 @@ puts "\n\n📦 Final Result:"
 puts "────────────────────────────────────────────"
 puts JSON.pretty_generate(final_result)
 
-# Exit with same status
-exit(final_result[:status] || 1)
+exit 0
